@@ -44,12 +44,6 @@ class InfoFrame(ttk.Frame):
         self.inspect_file = tk.Frame(self)
         self.inspect_file.grid_columnconfigure(0, weight=1, uniform=True)
         self.inspect_file.grid_columnconfigure(1, weight=1, uniform=True)
-        self.inspect_file.grid_columnconfigure(2, weight=1, uniform=True)
-        view_fnames = ttk.Button(
-            self.inspect_file,
-            text='View filenames',
-            command=self.parent.view_filenames
-        )
         view_attributes = ttk.Button(
             self.inspect_file,
             text='View attributes',
@@ -61,9 +55,8 @@ class InfoFrame(ttk.Frame):
             command=self.parent.view_variables
         )
 
-        view_fnames.grid(row=0, column=0, padx=10, pady=5)
-        view_attributes.grid(row=0, column=1, padx=10, pady=5)
-        view_variables.grid(row=0, column=2, padx=10, pady=5)
+        view_attributes.grid(row=0, column=0, padx=10, pady=5)
+        view_variables.grid(row=0, column=1, padx=10, pady=5)
 
         self.inspect_file.pack(padx=5, pady=5, fill=tk.X, expand=tk.YES)
 
