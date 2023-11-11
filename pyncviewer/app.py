@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
 from .attributes import AttributeWindow
+from .util_widgets import LabelString
 
 
 class App(tk.Tk):
@@ -15,15 +16,13 @@ class App(tk.Tk):
         self.menu = Menu(self)
         self.config(menu=self.menu)
 
-        self.menu.entryconfigure('Inspect', state=tk.DISABLED)
-
         self.info_panel = InfoFrame(self)
-        self.info_panel.pack(padx=10, pady=10, fill='x')
 
     def set_filename(self, filenames):
+        self.info_panel.pack_forget()
         self.filenames = filenames
         self.info_panel.update_filenames(self.filenames)
-        self.menu.entryconfigure('Inspect', state="normal")
+        self.info_panel.pack(padx=10, pady=10, fill='x')
 
     def view_filenames(self):
         return
@@ -52,30 +51,15 @@ class Menu(tk.Menu):
             label='Exit',
             command=self.parent.destroy
         )
-
-        self.inspect_menu = tk.Menu(self, tearoff=False)
-        self.inspect_menu.add_command(
-            label='View filenames',
-            command=self.parent.view_filenames
-        )
-        self.inspect_menu.add_command(
-            label='View attributes',
-            command=self.parent.view_attributes
-        )
-        self.inspect_menu.add_command(
-            label='View variables',
-            command=self.parent.view_variables
-        )
-
         # add these options under the file menu
         self.add_cascade(
             label='File',
             menu=self.file_menu
         )
-        self.add_cascade(
-            label='Inspect',
-            menu=self.inspect_menu
-        )
+        # self.add_cascade(
+        #     label='Inspect',
+        #     menu=self.inspect_file
+        # )
 
     def open_file(self):
         filetypes = (
@@ -86,7 +70,6 @@ class Menu(tk.Menu):
             filetypes=filetypes
         ))
         self.parent.set_filename(filenames)
-        return
 
 
 class InfoFrame(ttk.Frame):
@@ -94,10 +77,33 @@ class InfoFrame(ttk.Frame):
         self.parent = parent
         super().__init__(parent)
 
-        self.file_info = tk.StringVar()
+        self.entry = ttk.Label(self)
+        self.entry.pack(padx=10, pady=10, fill='x', expand=True)
 
-        self.entry = ttk.Label(self, textvariable=self.file_info)
-        self.entry.pack(padx=10, pady=10, fill='x')
+        self.file_info = LabelString(self.entry)
+
+        self.inspect_file = tk.Frame(self)
+        view_fnames = ttk.Button(
+            self.inspect_file,
+            text='View filenames',
+            command=self.parent.view_filenames
+        )
+        view_attributes = ttk.Button(
+            self.inspect_file,
+            text='View attributes',
+            command=self.parent.view_attributes
+        )
+        view_variables = ttk.Button(
+            self.inspect_file,
+            text='View variables',
+            command=self.parent.view_variables
+        )
+
+        view_fnames.grid(row=0, column=0, padx=10, pady=10)
+        view_attributes.grid(row=0, column=1, padx=10, pady=10)
+        view_variables.grid(row=0, column=2, padx=10, pady=10)
+
+        self.inspect_file.pack(padx=5, pady=5, fill=tk.X, expand=tk.YES)
 
     def update_filenames(self, filenames):
         self.file_info.set(f'Loaded {len(filenames)} files')
