@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+import os
 
 
 ATTR_BUTTON_SIZE = 120
@@ -16,20 +17,62 @@ class LabelString(tk.StringVar):
 
 
 class Toolbox(ttk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, filenames):
         self.parent = parent
+        self.filenames = filenames
 
         super().__init__(parent)
 
+        self.selected = 0
+        self.nfiles = len(self.filenames)
+
         self.left_button = ttk.Button(
-            self, text='Previous', command=self.parent.select_previous
+            self, text='Previous', command=self.select_previous
+        )
+        self.filename_label = ttk.Label(
+            self, text=''
         )
         self.right_button = ttk.Button(
-            self, text='Next', command=self.parent.select_next
+            self, text='Next', command=self.select_next
         )
 
+        self.check_button_state()
+
+        self.selected_filename = LabelString(self.filename_label)
+        self.update_label(self.filenames[self.selected])
+
         self.left_button.grid(row=0, column=0, padx=5, pady=5)
-        self.right_button.grid(row=0, column=1, padx=5, pady=5)
+        self.filename_label.grid(row=0, column=1, padx=5, pady=5)
+        self.right_button.grid(row=0, column=2, padx=5, pady=5)
+
+        self.grid_columnconfigure(0, weight=1, uniform=True)
+        self.grid_columnconfigure(1, weight=2, uniform=True)
+        self.grid_columnconfigure(2, weight=1, uniform=True)
+
+    def check_button_state(self):
+        if self.selected == 0:
+            self.left_button.config(state=tk.DISABLED)
+        if self.selected < self.nfiles - 1:
+            self.right_button.config(state=tk.NORMAL)
+        if self.selected > 0:
+            self.left_button.config(state=tk.NORMAL)
+        if self.selected == self.nfiles - 1:
+            self.right_button.config(state=tk.DISABLED)
+
+    def select_previous(self):
+        self.selected = max([0, self.selected - 1])
+        self.update_label(self.filenames[self.selected])
+        self.parent.select(self.selected)
+        self.check_button_state()
+
+    def select_next(self):
+        self.selected = min([len(self.filenames) - 1, self.selected + 1])
+        self.update_label(self.filenames[self.selected])
+        self.parent.select(self.selected)
+        self.check_button_state()
+
+    def update_label(self, filename):
+        self.selected_filename.set(f'{os.path.basename(filename)} [{self.selected + 1}/{self.nfiles}]')
 
 
 class ScrollableCanvas(tk.Canvas):

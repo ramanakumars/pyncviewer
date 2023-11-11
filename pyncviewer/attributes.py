@@ -1,47 +1,32 @@
 import tkinter as tk
 from tkinter import ttk
-from .util_widgets import Toolbox, LabelString
+from .util_widgets import Toolbox
 import netCDF4 as nc
-import os
 import numpy as np
 
 
-class AttributeWindow(tk.Tk):
-    def __init__(self, title, filenames):
-        super().__init__()
-        self.title(title)
-        self.geometry('650x500')
-        self.minsize(650, 500)
+class AttributeWindow(ttk.Frame):
+    def __init__(self, parent, filenames):
+        super().__init__(parent)
 
         self.filenames = filenames
 
         self.selected = 0
 
-        self.toolbox = Toolbox(self)
-        self.toolbox.pack(fill='x', padx=10, pady=10)
-
-        self.filename_label = ttk.Label(self)
-        self.filename_label.pack(fill='x', pady=10, padx=10)
-
-        self.selected_filename = LabelString(self.filename_label)
-        self.selected_filename.set('No files loaded')
+        self.toolbox = Toolbox(self, filenames)
+        self.toolbox.pack(fill='x', padx=10, pady=10, anchor='center')
 
         self.attributes_info_frame = AttributeInfo(self)
         self.attributes_info_frame.pack(fill='both', expand='yes')
 
         self.update()
 
-    def select_previous(self):
-        self.selected = max([0, self.selected - 1])
-        self.update()
-
-    def select_next(self):
-        self.selected = min([self.selected + 1, len(self.filenames) - 1])
+    def select(self, selected):
+        self.selected = selected
         self.update()
 
     def update(self):
         filename = self.filenames[self.selected]
-        self.selected_filename.set(f'Showing attributes for {os.path.basename(filename)}')
 
         with nc.Dataset(filename, 'r') as indset:
             attributes = {key: getattr(indset, key) for key in indset.ncattrs()}
@@ -64,7 +49,7 @@ class AttributeInfo(tk.Frame):
 
         self.rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1, uniform=True)
-        self.grid_columnconfigure(1, weight=3, uniform=True)
+        self.grid_columnconfigure(1, weight=2, uniform=True)
 
         self.attribute_selector = tk.Frame(self)
         self.info_panel = tk.Frame(self)
@@ -83,7 +68,7 @@ class AttributeInfo(tk.Frame):
             widgets.destroy()
 
         self.attribute_selector.rowconfigure(0, weight=1)
-        self.attribute_selector.grid_columnconfigure(0, weight=12, uniform=True)
+        self.attribute_selector.grid_columnconfigure(0, weight=10, uniform=True)
         self.attribute_selector.grid_columnconfigure(1, weight=1, uniform=True)
 
         self.attribute_list = ttk.Treeview(self.attribute_selector, columns=columns, show='headings', selectmode="browse")
@@ -125,11 +110,11 @@ class AttributeInfo(tk.Frame):
 
     def show_string_attribute(self, attribute):
         attribute_data = ttk.Label(self.info_panel, text=self.attribute_data[attribute])
-        attribute_data.pack(padx=10, pady=10, fill='x', expand='yes')
+        attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
 
     def show_numeric_attribute(self, attribute):
         attribute_data = ttk.Label(self.info_panel, text=str(self.attribute_data[attribute]))
-        attribute_data.pack(padx=10, pady=10, fill='x', expand='yes')
+        attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
 
     def show_list_attribute(self, attribute):
         columns = ('index', 'value')
