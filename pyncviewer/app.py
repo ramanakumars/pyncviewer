@@ -1,38 +1,43 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
-from .attributes import AttributeWindow
-from .util_widgets import LabelString
+from .viewer import FileViewer
 
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title('My app')
-        self.geometry('600x600')
-        self.minsize(600, 600)
+        self.title('PyNCViewer')
+        self.geometry('300x100')
+        self.minsize(300, 100)
 
-        self.menu = Menu(self)
-        self.config(menu=self.menu)
+        button_frame = ttk.Frame(self)
+        browse_button = ttk.Button(
+            button_frame,
+            text='Browse',
+            command=self.open_file,
+            width=20
+        )
+        button_frame.grid_rowconfigure(0, weight=1)
+        button_frame.grid_columnconfigure(0, weight=1)
+        browse_button.grid(row=0, column=0, padx=10, pady=10)
+        button_frame.pack(padx=5, pady=5, fill='both', expand='true')
 
-        self.info_panel = InfoFrame(self)
+    def open_file(self):
+        filetypes = (
+            ("netCDF4 files", "*.nc"),
+            ("All files", "*.*")
+        )
+        filenames = sorted(fd.askopenfilenames(
+            filetypes=filetypes
+        ))
+        if len(filenames) > 0:
+            self.set_filename(filenames)
 
     def set_filename(self, filenames):
-        self.info_panel.pack_forget()
-        self.filenames = filenames
-        self.info_panel.update_filenames(self.filenames)
-        self.info_panel.pack(padx=10, pady=10, fill='x')
-
-    def view_filenames(self):
-        return
-
-    def view_attributes(self):
-        window = AttributeWindow('View Attributes', self.filenames)
-        window.mainloop()
-
-    def view_variables(self):
-        return
+        file_window = FileViewer(filenames)
+        file_window.mainloop()
 
 
 class Menu(tk.Menu):
@@ -60,53 +65,6 @@ class Menu(tk.Menu):
         #     label='Inspect',
         #     menu=self.inspect_file
         # )
-
-    def open_file(self):
-        filetypes = (
-            ("netCDF4 files", "*.nc"),
-            ("All files", "*.*")
-        )
-        filenames = sorted(fd.askopenfilenames(
-            filetypes=filetypes
-        ))
-        self.parent.set_filename(filenames)
-
-
-class InfoFrame(ttk.Frame):
-    def __init__(self, parent):
-        self.parent = parent
-        super().__init__(parent)
-
-        self.entry = ttk.Label(self)
-        self.entry.pack(padx=10, pady=10, fill='x', expand=True)
-
-        self.file_info = LabelString(self.entry)
-
-        self.inspect_file = tk.Frame(self)
-        view_fnames = ttk.Button(
-            self.inspect_file,
-            text='View filenames',
-            command=self.parent.view_filenames
-        )
-        view_attributes = ttk.Button(
-            self.inspect_file,
-            text='View attributes',
-            command=self.parent.view_attributes
-        )
-        view_variables = ttk.Button(
-            self.inspect_file,
-            text='View variables',
-            command=self.parent.view_variables
-        )
-
-        view_fnames.grid(row=0, column=0, padx=10, pady=10)
-        view_attributes.grid(row=0, column=1, padx=10, pady=10)
-        view_variables.grid(row=0, column=2, padx=10, pady=10)
-
-        self.inspect_file.pack(padx=5, pady=5, fill=tk.X, expand=tk.YES)
-
-    def update_filenames(self, filenames):
-        self.file_info.set(f'Loaded {len(filenames)} files')
 
 
 if __name__ == "__main__":
