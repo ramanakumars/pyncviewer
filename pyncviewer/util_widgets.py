@@ -7,17 +7,17 @@ ATTR_BUTTON_SIZE = 120
 
 
 class LabelString(tk.StringVar):
-    def __init__(self, label):
+    def __init__(self, label: ttk.Label):
         self.label = label
         super().__init__()
 
-    def set(self, text):
+    def set(self, text: str):
         super().set(text)
         self.label['text'] = text
 
 
 class Toolbox(ttk.Frame):
-    def __init__(self, parent, filenames):
+    def __init__(self, parent: tk.Tk, filenames: list[str]):
         self.parent = parent
         self.filenames = filenames
 

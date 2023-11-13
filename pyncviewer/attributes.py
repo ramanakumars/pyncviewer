@@ -6,7 +6,7 @@ import numpy as np
 
 
 class AttributeWindow(ttk.Frame):
-    def __init__(self, parent, filenames, attributes):
+    def __init__(self, parent: tk.Tk, filenames: list[str], attributes: list[dict]):
         super().__init__(parent)
 
         self.filenames = filenames
@@ -24,7 +24,7 @@ class AttributeWindow(ttk.Frame):
 
         self.update()
 
-    def select(self, selected):
+    def select(self, selected: int):
         self.selected = selected
         self.update()
 
@@ -37,7 +37,7 @@ class AttributeWindow(ttk.Frame):
 
 
 class AttributeInfo(tk.Frame):
-    def __init__(self, parent, attributes, **kwargs):
+    def __init__(self, parent: tk.Tk, attributes: list[dict], **kwargs):
         self.parent = parent
         self.attribute_data = attributes
         super().__init__(parent, **kwargs)
@@ -79,7 +79,7 @@ class AttributeInfo(tk.Frame):
         self.attribute_list.configure(yscroll=scrollbar.set)
         scrollbar.grid(row=0, column=1, sticky='nsw')
 
-    def update_attributes(self, selected_fname):
+    def update_attributes(self, selected_fname: str):
         self.selected_fname = selected_fname
         file_attributes = list(self.attribute_data[selected_fname].keys())
         items = []
@@ -97,13 +97,13 @@ class AttributeInfo(tk.Frame):
 
         self.select_attribute(None)
 
-    def select_attribute(self, event):
+    def select_attribute(self, event: tk.Event):
         for selected_item in self.attribute_list.selection():
             item = self.attribute_list.item(selected_item)
             attr = item['values'][0]
             self.display_attribute(attr)
 
-    def display_attribute(self, attribute):
+    def display_attribute(self, attribute: str):
         for widgets in self.info_panel.winfo_children():
             widgets.destroy()
         attribute_value = self.attribute_data[self.selected_fname][attribute]
@@ -119,19 +119,19 @@ class AttributeInfo(tk.Frame):
         else:
             self.show_string_attribute(attribute, attribute_value)
 
-    def show_string_attribute(self, attribute, value):
+    def show_string_attribute(self, attribute: str, value: str):
         attribute_data = ttk.Label(self.info_panel, text=value)
         attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
 
-    def show_numeric_attribute(self, attribute, value):
+    def show_numeric_attribute(self, attribute: str, value: float | int):
         attribute_data = ttk.Label(self.info_panel, text=str(value))
         attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
 
-    def show_boolean_attribute(self, attribute, value):
+    def show_boolean_attribute(self, attribute: str, value: bool):
         attribute_data = ttk.Label(self.info_panel, text='True' if value else 'False')
         attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
 
-    def show_list_attribute(self, attribute, value):
+    def show_list_attribute(self, attribute: str, value: list | np.ndarray):
         columns = ('index', 'value')
 
         tree = ttk.Treeview(self.info_panel, columns=columns, show='headings')

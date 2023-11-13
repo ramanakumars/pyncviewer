@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from .attributes import AttributeWindow
-from .variables import Variable, GridVariable, VariableWindow
+from .variables import Variable, VariableWindow
 from .util_widgets import LabelString
 import netCDF4 as nc
 import os
@@ -9,7 +9,7 @@ from collections import defaultdict
 
 
 class FileViewer(tk.Tk):
-    def __init__(self, filenames):
+    def __init__(self, filenames: list[str]):
         super().__init__()
         self.filenames = filenames
 
@@ -34,13 +34,11 @@ class FileViewer(tk.Tk):
 
     def get_variables(self):
         self.variables = defaultdict(list)
-
-        self.grid_variables = defaultdict(list)
-
         self.time = defaultdict(float)
 
         for fname in self.filenames:
             with nc.Dataset(fname, 'r') as indset:
+                grid_variables = {}
                 # get the dimensions first
                 for dimension in indset.dimensions.keys():
                     var_data = indset.variables[dimension]
@@ -49,13 +47,13 @@ class FileViewer(tk.Tk):
                         self.time[os.path.basename(fname)] = var_data[:][0]
                         continue
                     else:
-                        self.grid_variables[os.path.basename(fname)].append(GridVariable(var_data, fname))
+                        grid_variables[dimension] = indset.variables[dimension][:]
 
                 # get all the other variable info
                 for var, var_data in indset.variables.items():
                     # parse the other metadata
                     if len(var_data.shape) >= 3:
-                        self.variables[os.path.basename(fname)].append(Variable(var_data, fname))
+                        self.variables[os.path.basename(fname)].append(Variable(var_data, fname, grid_variables))
 
     def view_attributes(self):
         self.main_panel.destroy()
@@ -69,7 +67,7 @@ class FileViewer(tk.Tk):
 
 
 class InfoFrame(ttk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent: tk.Tk):
         self.parent = parent
         super().__init__(parent)
 
@@ -97,11 +95,11 @@ class InfoFrame(ttk.Frame):
 
         self.inspect_file.pack(padx=5, pady=5, fill=tk.X, expand=tk.YES)
 
-    def update_filenames(self, filenames):
+    def update_filenames(self, filenames: list[str]):
         self.file_info.set(f'Loaded {len(filenames)} files')
 
 
-def get_variable_info(variable):
+def get_variable_info(variable: nc.Variable):
     attrs = {key: getattr(variable, key) for key in variable.ncattrs()}
     return {
         'shape': variable.shape,
