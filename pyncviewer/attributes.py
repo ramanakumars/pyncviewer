@@ -1,22 +1,25 @@
 import tkinter as tk
 from tkinter import ttk
 from .util_widgets import Toolbox
-import netCDF4 as nc
+import os
 import numpy as np
 
 
 class AttributeWindow(ttk.Frame):
-    def __init__(self, parent, filenames):
+    def __init__(self, parent, filenames, attributes):
         super().__init__(parent)
 
         self.filenames = filenames
+        self.attributes = attributes
 
         self.selected = 0
+        filename = self.filenames[self.selected]
+        self.selected_fname = os.path.basename(filename)
 
         self.toolbox = Toolbox(self, filenames)
         self.toolbox.pack(fill='x', padx=10, pady=10, anchor='center')
 
-        self.attributes_info_frame = AttributeInfo(self)
+        self.attributes_info_frame = AttributeInfo(self, attributes)
         self.attributes_info_frame.pack(fill='both', expand='yes')
 
         self.update()
@@ -28,23 +31,15 @@ class AttributeWindow(ttk.Frame):
     def update(self):
         filename = self.filenames[self.selected]
 
-        with nc.Dataset(filename, 'r') as indset:
-            attributes = {key: getattr(indset, key) for key in indset.ncattrs()}
+        self.selected_fname = os.path.basename(filename)
 
-        self.attributes_info_frame.update_attributes(attributes)
-
-    def open_attribute(self, attr_name):
-        filename = self.filenames[self.selected]
-        with nc.Dataset(filename, 'r') as indset:
-            attr_value = getattr(indset, attr_name)
-
-        window = AttributeInfo({'name': attr_name, 'value': attr_value})
-        window.mainloop()
+        self.attributes_info_frame.update_attributes(self.selected_fname)
 
 
 class AttributeInfo(tk.Frame):
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent, attributes, **kwargs):
         self.parent = parent
+        self.attribute_data = attributes
         super().__init__(parent, **kwargs)
 
         self.rowconfigure(0, weight=1)
@@ -56,9 +51,6 @@ class AttributeInfo(tk.Frame):
 
         self.attribute_selector.grid(row=0, column=0, padx=5, pady=5, sticky='nws')
         self.info_panel.grid(row=0, column=1, padx=5, pady=5, sticky='news')
-
-    def update_attributes(self, attribute_data):
-        self.attribute_data = attribute_data
 
         columns = ('attribute')
 
@@ -76,17 +68,34 @@ class AttributeInfo(tk.Frame):
         # define headings
         self.attribute_list.heading('attribute', text='Attribute')
 
-        for attr in self.attribute_data.keys():
-            self.attribute_list.insert('', tk.END, values=(attr))
-
         self.attribute_list.grid(row=0, column=0, sticky='nsew')
 
         self.attribute_list.bind('<<TreeviewSelect>>', self.select_attribute)
+
+        self.selected_fname = self.parent.selected_fname
 
         # add a scrollbar
         scrollbar = ttk.Scrollbar(self.attribute_selector, orient=tk.VERTICAL, command=self.attribute_list.yview)
         self.attribute_list.configure(yscroll=scrollbar.set)
         scrollbar.grid(row=0, column=1, sticky='nsw')
+
+    def update_attributes(self, selected_fname):
+        self.selected_fname = selected_fname
+        file_attributes = list(self.attribute_data[selected_fname].keys())
+        items = []
+        for i, itID in enumerate(self.attribute_list.get_children('')):
+            items.append(self.attribute_list.item(itID))
+        item_attributes = [item['values'][0] for item in items]
+
+        attributes = sorted(set((*file_attributes, *item_attributes)))
+        for i, name in enumerate(attributes):
+            if (name in file_attributes) and (name not in item_attributes):
+                self.attribute_list.insert('', i, values=(name))
+            if (name in item_attributes) and (name not in file_attributes):
+                item = next(filter(lambda it: it['values'][0] == name), items)
+                self.attribute_list.delete(item)
+
+        self.select_attribute(None)
 
     def select_attribute(self, event):
         for selected_item in self.attribute_list.selection():
@@ -97,26 +106,32 @@ class AttributeInfo(tk.Frame):
     def display_attribute(self, attribute):
         for widgets in self.info_panel.winfo_children():
             widgets.destroy()
-        attribute_value = self.attribute_data[attribute]
+        attribute_value = self.attribute_data[self.selected_fname][attribute]
 
         if isinstance(attribute_value, str):
-            self.show_string_attribute(attribute)
+            self.show_string_attribute(attribute, attribute_value)
         elif isinstance(attribute_value, float) or isinstance(attribute_value, int):
-            self.show_numeric_attribute(attribute)
+            self.show_numeric_attribute(attribute, attribute_value)
+        elif isinstance(attribute_value, bool):
+            self.show_boolean_attribute(attribute, attribute_value)
         elif isinstance(attribute_value, list) or isinstance(attribute_value, np.ndarray):
-            self.show_list_attribute(attribute)
+            self.show_list_attribute(attribute, attribute_value)
         else:
-            self.show_string_attribute(attribute)
+            self.show_string_attribute(attribute, attribute_value)
 
-    def show_string_attribute(self, attribute):
-        attribute_data = ttk.Label(self.info_panel, text=self.attribute_data[attribute])
+    def show_string_attribute(self, attribute, value):
+        attribute_data = ttk.Label(self.info_panel, text=value)
         attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
 
-    def show_numeric_attribute(self, attribute):
-        attribute_data = ttk.Label(self.info_panel, text=str(self.attribute_data[attribute]))
+    def show_numeric_attribute(self, attribute, value):
+        attribute_data = ttk.Label(self.info_panel, text=str(value))
         attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
 
-    def show_list_attribute(self, attribute):
+    def show_boolean_attribute(self, attribute, value):
+        attribute_data = ttk.Label(self.info_panel, text='True' if value else 'False')
+        attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
+
+    def show_list_attribute(self, attribute, value):
         columns = ('index', 'value')
 
         tree = ttk.Treeview(self.info_panel, columns=columns, show='headings')
@@ -129,8 +144,8 @@ class AttributeInfo(tk.Frame):
         tree.heading('index', text='Index')
         tree.heading('value', text='Value')
 
-        for i, value in enumerate(self.attribute_data[attribute]):
-            tree.insert('', tk.END, values=(str(i), str(value)))
+        for i, val in enumerate(value):
+            tree.insert('', tk.END, values=(str(i), str(val)))
 
         tree.grid(row=0, column=0, sticky='nsew')
 
