@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from .util_widgets import Toolbox
 import os
+from typing import Union
 import numpy as np
 
 
@@ -123,7 +124,7 @@ class AttributeInfo(tk.Frame):
         attribute_data = ttk.Label(self.info_panel, text=value)
         attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
 
-    def show_numeric_attribute(self, attribute: str, value: float | int):
+    def show_numeric_attribute(self, attribute: str, value: Union[float, int]):
         attribute_data = ttk.Label(self.info_panel, text=str(value))
         attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
 
@@ -131,7 +132,7 @@ class AttributeInfo(tk.Frame):
         attribute_data = ttk.Label(self.info_panel, text='True' if value else 'False')
         attribute_data.pack(padx=10, pady=10, fill='x', expand='yes', anchor=tk.NW)
 
-    def show_list_attribute(self, attribute: str, value: list | np.ndarray):
+    def show_list_attribute(self, attribute: str, value: Union[list, np.ndarray]):
         columns = ('index', 'value')
 
         tree = ttk.Treeview(self.info_panel, columns=columns, show='headings')
